@@ -214,6 +214,7 @@ interface AppState {
   setServerInfo: (info: ServerInfo | null) => void;
   setSavings: (data: SavingsData | null) => void;
   incrementSavings: (usage: TokenUsage) => void;
+  initializeModelsFromBackend: () => Promise<void>;
 
   // Live GPU metrics — streamed from /api/research system_metrics events.
   // When non-null, the System panel renders this instead of polled values
@@ -514,6 +515,24 @@ export const useAppStore = create<AppState>((set, get) => {
       }),
     setModelsLoading: (loading: boolean) => set({ modelsLoading: loading }),
     setSelectedModel: (model: string) => set({ selectedModel: model }),
+    
+    initializeModelsFromBackend: async () => {
+      const { setModels, setModelsLoading } = get();
+      setModelsLoading(true);
+      try {
+        const res = await fetch('http://127.0.0.1:8000/v1/models');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const models: ModelInfo[] = data.data || [];
+        setModels(models);
+      } catch (error) {
+        console.error('Failed to fetch models from backend:', error);
+        setModels([]);
+      } finally {
+        setModelsLoading(false);
+      }
+    },
+    
     setServerInfo: (info: ServerInfo | null) => set({ serverInfo: info }),
     setSavings: (data: SavingsData | null) => set({ savings: data }),
     incrementSavings: (usage: TokenUsage) => {

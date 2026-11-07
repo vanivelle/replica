@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REPLICA - Sovereign AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .replica-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #00d4ff;
+            padding: 40px;
+            border-radius: 12px;
+            border-left: 4px solid #00d4ff;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+            text-align: center;
+        }
+
+        .replica-header h1 {
+            font-size: 3em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .replica-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .replica-badge {
+            display: inline-block;
+            background: #00d4ff;
+            color: #1a1a2e;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .status-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-panel h2 {
+            margin-bottom: 20px;
+            color: #1a1a2e;
+            font-size: 1.3em;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #00d4ff;
+        }
+
+        .status-label {
+            display: block;
+            font-size: 0.85em;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            display: block;
+            font-size: 1.2em;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d4ff;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .greeting-message {
+            background: #e8f4f8;
+            border-left: 4px solid #00d4ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-style: italic;
+            color: #1a1a2e;
+            line-height: 1.8;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .specialties {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .specialties h2 {
+            margin-bottom: 20px;
+            color: #1a1a2e;
+            font-size: 1.3em;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 10px;
+        }
+
+        .specialty-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .specialty-tag {
+            background: #00d4ff;
+            color: #1a1a2e;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .lore-section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #00d4ff;
+        }
+
+        .lore-section h2 {
+            margin-bottom: 15px;
+            color: #1a1a2e;
+            font-size: 1.3em;
+        }
+
+        .lore-text {
+            line-height: 1.8;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .lore-text p {
+            margin-bottom: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #00d4ff;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #f99;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app">
+            <div class="loading">Carregando REPLICA...</div>
+        </div>
+        <div class="footer">
+            REPLICA - Sovereign AI Assistant v1.0.0 | OpenJarvis Ecosystem
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://127.0.0.1:8000';
+
+        async function initializeReplica() {
+            try {
+                // Fetch REPLICA info
+                const infoRes = await fetch(`${BASE_URL}/v1/replica/info`);
+                if (!infoRes.ok) throw new Error('Failed to fetch REPLICA info');
+                const replica = await infoRes.json();
+
+                // Fetch REPLICA status
+                const statusRes = await fetch(`${BASE_URL}/v1/replica/status`);
+                if (!statusRes.ok) throw new Error('Failed to fetch REPLICA status');
+                const status = await statusRes.json();
+
+                // Fetch REPLICA greeting
+                const greetingRes = await fetch(`${BASE_URL}/v1/replica/greeting`, {
+                    method: 'POST'
+                });
+                if (!greetingRes.ok) throw new Error('Failed to fetch greeting');
+                const greeting = await greetingRes.json();
+
+                // Render UI
+                renderUI(replica, status, greeting);
+
+                // Update status every 5 seconds
+                setInterval(updateStatus, 5000);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('app').innerHTML = `
+                    <div class="error">
+                        Erro ao carregar REPLICA: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function renderUI(replica, status, greeting) {
+            const specialtiesHtml = replica.specialties
+                .map(s => `<span class="specialty-tag">${s}</span>`)
+                .join('');
+
+            document.getElementById('app').innerHTML = `
+                <div class="replica-header">
+                    <h1>${replica.name}</h1>
+                    <p>${replica.type}</p>
+                    <span class="replica-badge">${replica.status.toUpperCase()}</span>
+                </div>
+
+                <div class="greeting-message">
+                    ${greeting.message.replace(/\n\n/g, '<br><br>')}
+                </div>
+
+                <div class="status-panel">
+                    <h2>Status Operacional</h2>
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <span class="status-label">Modo</span>
+                            <span class="status-value">
+                                <span class="indicator"></span>${status.operational_mode}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Agentes Ativos</span>
+                            <span class="status-value">${status.agents_active}/${status.agents_total}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Memória</span>
+                            <span class="status-value">${replica.memory_backend}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Status Memória</span>
+                            <span class="status-value">
+                                <span class="indicator"></span>${status.memory_status}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Roteamento</span>
+                            <span class="status-value">
+                                <span class="indicator"></span>${status.routing_status}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Repositórios</span>
+                            <span class="status-value">${replica.repositories_count}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="specialties">
+                    <h2>Especialidades</h2>
+                    <div class="specialty-list">
+                        ${specialtiesHtml}
+                    </div>
+                </div>
+
+                <div class="lore-section">
+                    <h2>Identidade & Lore</h2>
+                    <div class="lore-text">
+                        <p><strong>Origem:</strong> ${replica.origin}</p>
+                        <p><strong>Versão:</strong> ${replica.version}</p>
+                        <p><strong>Sobre:</strong></p>
+                        <p>${replica.lore}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function updateStatus() {
+            try {
+                const statusRes = await fetch(`${BASE_URL}/v1/replica/status`);
+                if (statusRes.ok) {
+                    const status = await statusRes.json();
+                    // Update status display if needed
+                }
+            } catch (error) {
+                console.error('Status update error:', error);
+            }
+        }
+
+        // Initialize on load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeReplica);
+        } else {
+            initializeReplica();
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route } from 'react-router';
 import { Layout } from './components/Layout';
+import { HudLayout } from './components/HudLayout';
 import { ChatPage } from './pages/ChatPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -20,10 +21,12 @@ import { offerAnalyticsChoice } from './lib/analytics-invitation';
 
 export default function App() {
   const [setupDone, setSetupDone] = useState(!isTauri());
+  const [useHudMode, setUseHudMode] = useState(() => {
+    return localStorage.getItem('jarvis-hud-mode') === 'true';
+  });
+  
   const handleSetupReady = useCallback(() => {
     setSetupDone(true);
-    // Only fire once per install — guard against setup screen re-appearing
-    // on reinstalls or dev reloads.
     if (!localStorage.getItem('oj-setup-completed')) {
       localStorage.setItem('oj-setup-completed', '1');
       track('setup_completed', { preset: 'default' });
@@ -66,13 +69,17 @@ export default function App() {
   }, [importOverlay]);
 
   // Fetch models on mount
+  const initializeModelsFromBackend = useAppStore((s) => s.initializeModelsFromBackend);
   useEffect(() => {
-    fetchModels()
-      .then((m) => {
-        setModels(m);
-      })
-      .catch(() => setModels([]))
-      .finally(() => setModelsLoading(false));
+    initializeModelsFromBackend().catch(() => {
+      // Fallback to regular fetchModels if backend initialization fails
+      fetchModels()
+        .then((m) => {
+          setModels(m);
+        })
+        .catch(() => setModels([]))
+        .finally(() => setModelsLoading(false));
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch server info
@@ -179,11 +186,21 @@ export default function App() {
     return <SetupScreen onReady={handleSetupReady} />;
   }
 
+  // Toggle HUD mode
+  const toggleHud = () => {
+    const newVal = !useHudMode;
+    setUseHudMode(newVal);
+    localStorage.setItem('jarvis-hud-mode', newVal ? 'true' : 'false');
+  };
+
+  // Use HUD layout if enabled, otherwise use standard Layout
+  const LayoutComponent = useHudMode ? HudLayout : Layout;
+
   return (
     <>
       <UpdateChecker />
       <Routes>
-        <Route element={<Layout />}>
+        <Route element={<LayoutComponent />}>
           <Route index element={<ChatPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="settings" element={<SettingsPage />} />
@@ -198,6 +215,29 @@ export default function App() {
       {optInModalOpen && (
         <OptInModal onClose={() => setOptInModalOpen(false)} />
       )}
+      {/* HUD Mode Toggle Button - floating in bottom right */}
+      <button
+        onClick={toggleHud}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          padding: '8px 12px',
+          background: useHudMode ? '#00ff88' : '#444',
+          color: useHudMode ? '#0a0e27' : '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          cursor: 'pointer',
+          zIndex: 9999,
+          letterSpacing: '1px',
+          fontWeight: 600,
+        }}
+        title={useHudMode ? 'Disable HUD' : 'Enable HUD Mode'}
+      >
+        {useHudMode ? '◆ HUD MODE' : '○ STD MODE'}
+      </button>
     </>
   );
 }

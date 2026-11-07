@@ -8,6 +8,7 @@ import click
 
 import openjarvis
 from openjarvis.cli.scan_cmd import scan
+from openjarvis.cli.sync import sync
 
 
 def _invoked_command(argv: list[str]) -> str:
@@ -96,6 +97,7 @@ def cli(ctx: click.Context, verbose: bool, quiet: bool, pick_model_bare: bool) -
 
 
 cli.add_command(scan, "scan")
+cli.add_command(sync, "sync")
 if not _DATA_BOUNDARY_BOOTSTRAP:
     from openjarvis.cli._bootstrap import bootstrap_cmd
     from openjarvis.cli.add_cmd import add

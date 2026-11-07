@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend Connection</title>
+</head>
+<body>
+    <h1>Frontend Backend Connection Test</h1>
+    <button onclick="testBackendConnection()">Test Models Connection</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testBackendConnection() {
+            const result = document.getElementById('result');
+            result.textContent = 'Testing connection to http://127.0.0.1:8000/v1/models...\n';
+            
+            try {
+                const response = await fetch('http://127.0.0.1:8000/v1/models');
+                result.textContent += `Status: ${response.status}\n`;
+                
+                const data = await response.json();
+                result.textContent += `Response:\n${JSON.stringify(data, null, 2)}\n`;
+                
+                if (data.data && Array.isArray(data.data)) {
+                    result.textContent += `\nTotal Models: ${data.data.length}\n`;
+                    data.data.forEach(model => {
+                        result.textContent += `- ${model.id}\n`;
+                    });
+                }
+            } catch (error) {
+                result.textContent += `ERROR: ${error.message}\n`;
+                result.textContent += `\nNote: This might be a CORS issue. Check browser console.`;
+            }
+        }
+        
+        // Auto-test on load
+        testBackendConnection();
+    </script>
+</body>
+</html>

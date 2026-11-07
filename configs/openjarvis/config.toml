@@ -1,20 +1,16 @@
 # OpenJarvis configuration — GLM-4.7-Flash eval on 8x A100-80GB
 
 # ═══════════════════════════════════════════════════════════════
-# PILLAR 1: Intelligence — The Model
+# PILLAR 1: Intelligence — Cloud Native (Claude CLI / Anthropic)
 # ═══════════════════════════════════════════════════════════════
 [intelligence]
-default_model = "zai-org/GLM-4.7-Flash"   # HuggingFace model ID
-fallback_model = "glm-4.7-flash"          # Catalog alias fallback
-preferred_engine = "vllm"                 # MoE model, vLLM is best for A100s
-provider = "local"                        # Running locally on this machine
-quantization = "none"                     # Full precision, we have 640GB VRAM
-# Generation defaults for eval
-temperature = 0.0                         # Deterministic for reproducibility
-max_tokens = 2048                         # Standard eval output length
-top_p = 0.9
-top_k = 40
-repetition_penalty = 1.0
+default_model = "claude-3-5-sonnet-20241022"
+fallback_model = "gemini-1.5-pro"
+preferred_engine = "anthropic"
+provider = "anthropic"
+quantization = "none"
+temperature = 0.7
+max_tokens = 4096
 
 # ═══════════════════════════════════════════════════════════════
 # PILLAR 2: Agent — The Agentic Harness
@@ -40,7 +36,11 @@ enabled = true
 # PILLAR 4: Engine — The Inference Runtime
 # ═══════════════════════════════════════════════════════════════
 [engine]
-default = "vllm"
+default = "anthropic"
+
+[engine.anthropic]
+# Usa as credenciais e rotas do Claude CLI/API
+host = "https://api.anthropic.com"
 
 [engine.vllm]
 host = "http://localhost:8001"            # vLLM serving port
@@ -66,6 +66,8 @@ host = "http://localhost:8080"
 
 [engine.apple_fm]
 host = "http://localhost:8079"                # OpenAI-compatible shim
+
+
 
 # In-process Apple Foundation Models (macOS 26+, Apple Intelligence enabled).
 # Install with: uv pip install -e '.[afm]'

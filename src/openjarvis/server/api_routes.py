@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import (
     APIRouter,
     HTTPException,
+    Query,
     Request,
     Response,
     WebSocket,
@@ -393,6 +394,163 @@ def memory_index(req: MemoryIndexRequest, request: Request):
         return result
     except HTTPException:
         raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ReplicaMemory endpoints for long-term memory with compression
+_replica_memory = None
+
+
+def _get_replica_memory():
+    """Get or create singleton ReplicaMemory instance."""
+    global _replica_memory
+    if _replica_memory is None:
+        from openjarvis.memory.replica_memory import ReplicaMemory
+        _replica_memory = ReplicaMemory(
+            memory_size_bytes=8192 * 1024,  # 8MB default
+            storage_path="./memory_store"
+        )
+    return _replica_memory
+
+
+class ReplicaMemoryStoreRequest(BaseModel):
+    session_id: str
+    message: str
+    role: str = "user"
+    metadata: Optional[Dict[str, Any]] = None
+    tokens: Optional[int] = None
+
+
+@memory_router.post("/replica/store")
+async def replica_memory_store(req: ReplicaMemoryStoreRequest):
+    """Store message in ReplicaMemory with compression."""
+    try:
+        memory = _get_replica_memory()
+        entry_id = memory.store_message(
+            session_id=req.session_id,
+            message=req.message,
+            role=req.role,
+            metadata=req.metadata,
+            tokens=req.tokens,
+        )
+        entry = memory.pool.get_entry(entry_id)
+        return {
+            "entry_id": entry_id,
+            "timestamp": entry.timestamp,
+            "tokens": entry.tokens,
+            "status": "stored",
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@memory_router.get("/replica/stats")
+async def replica_memory_stats():
+    """Get ReplicaMemory statistics including compression info."""
+    try:
+        memory = _get_replica_memory()
+        stats = memory.get_memory_stats()
+        return stats
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@memory_router.get("/replica/session/{session_id}")
+async def replica_get_session(
+    session_id: str,
+    recent_count: int = Query(10, ge=1, le=100),
+):
+    """Get session context from ReplicaMemory."""
+    try:
+        memory = _get_replica_memory()
+        context = memory.get_session_context(
+            session_id=session_id,
+            recent_count=recent_count,
+        )
+        if session_id not in memory.sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session = memory.sessions[session_id]
+        return {
+            "session_id": session_id,
+            "entries_count": len(context),
+            "entries": context,
+            "total_tokens": session.total_tokens,
+            "turn_count": session.turn_count,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@memory_router.post("/replica/session/{session_id}/load")
+async def replica_load_session(session_id: str):
+    """Load session from ReplicaMemory storage."""
+    try:
+        memory = _get_replica_memory()
+        success = memory.load_session(session_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Session not found in storage")
+        
+        session = memory.sessions[session_id]
+        return {
+            "session_id": session_id,
+            "loaded": True,
+            "entries_count": len(session.entries),
+            "total_tokens": session.total_tokens,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@memory_router.post("/replica/session/{session_id}/clear")
+async def replica_clear_session(session_id: str):
+    """Clear session from ReplicaMemory."""
+    try:
+        memory = _get_replica_memory()
+        if session_id not in memory.sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        session = memory.sessions[session_id]
+        entries_count = len(session.entries)
+        
+        # Remove entries from pool
+        for entry in session.entries:
+            if entry.id in memory.pool.entries:
+                del memory.pool.entries[entry.id]
+        
+        del memory.sessions[session_id]
+        
+        # Remove storage file
+        session_file = memory.storage_path / f"{session_id}.json"
+        if session_file.exists():
+            session_file.unlink()
+        
+        return {
+            "session_id": session_id,
+            "cleared": True,
+            "entries_removed": entries_count,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@memory_router.post("/replica/cleanup")
+async def replica_cleanup_sessions(days: int = Query(30, ge=1)):
+    """Clean up old sessions in ReplicaMemory."""
+    try:
+        memory = _get_replica_memory()
+        removed_count = memory.clear_old_sessions(days=days)
+        return {
+            "removed_sessions": removed_count,
+            "threshold_days": days,
+        }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
