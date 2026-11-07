@@ -3,9 +3,13 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from openjarvis.server.app import create_app
+from openjarvis.server.main import MockEngine
 from datetime import datetime
 
-app = create_app()
+app = create_app(
+    engine=MockEngine(), 
+    model="gpt-4"
+    )
 
 class MockEngine:
     """Mock inference engine for development/testing."""
